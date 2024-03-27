@@ -1,0 +1,33 @@
+// TODO support symbol values?
+.type Argument = Constant { value: number }
+               | Variable { name: symbol }
+
+.type ArgumentList = [
+    first: Argument,
+    rest: ArgumentList
+]
+
+.type Predicate = [
+    name: symbol,
+    arguments: ArgumentList
+]
+
+.type PredicateList = [
+    first: Predicate,
+    rest: PredicateList
+]
+
+.type HornClause = [
+    head: Predicate,
+    body: PredicateList
+]
+
+.decl extensional(hc: HornClause)
+.output extensional
+
+// parent(0, 1).
+extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
+            nil]).
+// ancestor(x, y) :- parent(x, y).
+extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
+            [["parent", [$Variable("x"), [$Variable("y"), nil]]], nil]]).
