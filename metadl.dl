@@ -31,3 +31,26 @@ extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
 // ancestor(x, y) :- parent(x, y).
 extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
             [["parent", [$Variable("x"), [$Variable("y"), nil]]], nil]]).
+
+.decl body_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList, rest_preds: PredicateList)
+.output body_argument
+body_argument(horn_clause, arg, restargs, restpreds) :-
+    extensional(horn_clause),
+    horn_clause=[_1, [[_2, [arg, restargs]], restpreds]].
+body_argument(horn_clause, arg, restargs, restpreds) :- body_argument(horn_clause, _, [arg, restargs], restpreds).
+body_argument(horn_clause, arg, restargs, restpreds) :- body_argument(horn_clause, _, nil, [[_, [arg, restargs]], restpreds]).
+
+.decl head_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList)
+head_argument(horn_clause, arg, restargs) :-
+    extensional(horn_clause),
+    horn_clause=[[_1, [arg, restargs]], _2].
+head_argument(horn_clause, arg, restargs) :- head_argument(horn_clause, _, [arg, restargs]).
+
+// Report rules that contain a variable in the head that is not an
+// argument of any predicate in the body.
+.decl error_ungrounded_variable(ungrounded_variable: Argument, horn_clause: HornClause)
+.output error_ungrounded_variable(IO=stdout, delimiter=" is ungrounded in ")
+error_ungrounded_variable(ungrounded_var, horn_clause) :-
+    head_argument(horn_clause, ungrounded_var, _),
+    ungrounded_var=$Variable(_1),
+    !body_argument(horn_clause, ungrounded_var, _, _).
