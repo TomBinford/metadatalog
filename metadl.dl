@@ -2,6 +2,11 @@
 .type Argument = Constant { value: number }
                | Variable { name: symbol }
 
+.type ConstantList = [
+    first: number,
+    rest: ConstantList
+]
+
 .type ArgumentList = [
     first: Argument,
     rest: ArgumentList
@@ -33,7 +38,6 @@ extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
             [["parent", [$Variable("x"), [$Variable("y"), nil]]], nil]]).
 
 .decl body_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList, rest_preds: PredicateList)
-.output body_argument
 body_argument(horn_clause, arg, restargs, restpreds) :-
     extensional(horn_clause),
     horn_clause=[_1, [[_2, [arg, restargs]], restpreds]].
@@ -54,3 +58,17 @@ error_ungrounded_variable(ungrounded_var, horn_clause) :-
     head_argument(horn_clause, ungrounded_var, _),
     ungrounded_var=$Variable(_1),
     !body_argument(horn_clause, ungrounded_var, _, _).
+
+.decl extensional_fact_(predicate_name: symbol, constants: ConstantList, args_rest: ArgumentList)
+extensional_fact_(pname, nil, args) :- extensional([[pname, args], nil]).
+extensional_fact_(pname, [c, restcs], restargs) :- extensional_fact_(pname, restcs, [$Constant(c), restargs]).
+
+.decl extensional_fact(predicate_name: symbol, constants: ConstantList)
+extensional_fact(pname, cs) :- extensional_fact_(pname, cs, nil).
+
+.output extensional_fact(IO=stdout)
+
+// The set of all facts in the metadatalog program, extensional and intensional.
+// TODO the intensional part lol
+.decl fact(predicate_name: symbol, constants: ConstantList)
+fact(pname, cs) :- extensional_fact(pname, cs).
