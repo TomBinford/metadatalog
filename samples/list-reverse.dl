@@ -1,0 +1,17 @@
+.type List = [
+    first: number,
+    rest: List
+]
+
+.decl data(id: symbol, x: List)
+.output data(IO=stdout)
+data("l1", [1, nil]).
+data("l2", [1, [2, [3, nil]]]).
+
+.decl _rev(id: symbol, result: List, remaining: List)
+_rev(id, nil, l) :- data(id, l).
+_rev(id, [x, xsrest], rem) :- _rev(id, xsrest, [x, rem]).
+
+.decl reverse(id: symbol, list: List)
+.output reverse(IO=stdout)
+reverse(id, l) :- _rev(id, l, nil).
