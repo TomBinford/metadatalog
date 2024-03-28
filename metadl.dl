@@ -60,6 +60,7 @@ error_ungrounded_variable(ungrounded_var, horn_clause) :-
     !body_argument(horn_clause, ungrounded_var, _, _).
 
 // The set of extensional facts (but constants is in reverse order)
+// No groundedness check necessary because extensional_fact_rev_(_, _, nil) will only exist when all arguments are constants.
 .decl extensional_fact_rev_(predicate_name: symbol, constants: ConstantList, args_rest: ArgumentList)
 extensional_fact_rev_(pname, nil, args) :- extensional([[pname, args], nil]).
 extensional_fact_rev_(pname, [c, restcs], restargs) :- extensional_fact_rev_(pname, restcs, [$Constant(c), restargs]).
