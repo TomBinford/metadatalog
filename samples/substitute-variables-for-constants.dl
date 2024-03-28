@@ -1,0 +1,52 @@
+.type Argument = Constant { value: number }
+              | Variable { name: symbol }
+
+.type ConstantList = [
+    first: number,
+    rest: ConstantList
+]
+
+.type ArgumentList = [
+    first: Argument,
+    rest: ArgumentList
+]
+
+.type Predicate = [
+    name: symbol,
+    arguments: ArgumentList
+]
+
+.type Substitution = [
+    variable_name: symbol,
+    value: number
+]
+
+.type SubstitutionList = [
+    first: Substitution,
+    rest: SubstitutionList
+]
+
+.decl data(alist: ArgumentList, subs: SubstitutionList)
+.output data(IO=stdout)
+data([$Constant(0), [$Constant(1), nil]], nil).
+data([$Variable("a"), [$Variable("b"), [$Variable("a"), nil]]], [["b", 2], [["a", 1], nil]]).
+data([$Variable("a"), [$Constant(3), nil]], [["b", 2], [["a", 1], nil]]).
+
+.decl _substitution_lookup(subs: SubstitutionList, variable_name: symbol, value: number, rest: SubstitutionList)
+_substitution_lookup(subs, var, v, rest) :- data(_, subs), subs=[[var, v], rest].
+_substitution_lookup(subs, var, v, rest) :- _substitution_lookup(subs, _, _, [[var, v], rest]).
+
+.decl _substitution_rev(result: ConstantList, alist: ArgumentList, subs: SubstitutionList, todo: ArgumentList)
+_substitution_rev(nil, alist, subs, alist) :- data(alist, subs).
+// Constants are unchanged by substitution.
+_substitution_rev([v, result], alist, subs, rest) :- _substitution_rev(result, alist, subs, [$Constant(v), rest]).
+// Variables are transformed according to subs.
+_substitution_rev([v, result], alist, subs, rest) :- _substitution_rev(result, alist, subs, [$Variable(var), rest]), _substitution_lookup(subs, var, v, _).
+
+.decl _substitution(result: ConstantList, rev: ConstantList, alist: ArgumentList, subs: SubstitutionList)
+_substitution(nil, rev, alist, subs) :- _substitution_rev(rev, alist, subs, nil).
+_substitution([x, result], rev, alist, subs) :- _substitution(result, [x, rev], alist, subs).
+
+.decl substituted(result: ConstantList, alist: ArgumentList, subs: SubstitutionList)
+.output substituted(IO=stdout)
+substituted(r, a, s) :- _substitution(r, nil, a, s).
