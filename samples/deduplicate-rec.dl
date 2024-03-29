@@ -1,0 +1,33 @@
+// A more traditional "recursive" implementation for deduplicate.
+// Compared to deduplicate.dl there is no need for a reversing step,
+// but it needs more bookkeeping with _todo for "returning" from the
+// recursive step and there is more casework for processing duplicates.
+
+.type List = [
+    first: number,
+    rest: List
+]
+
+.decl data(x: List)
+.output data(IO=stdout)
+data([1, [2, [3, [2, [4, [3, nil]]]]]]).
+data([3, [3, [1, [2, [1, nil]]]]]).
+
+.decl _todo(list: List)
+_todo(l) :- data(l).
+_todo(rest) :- _todo([_, rest]).
+
+.decl _dedup(deduped: List, tocheck: List, original: List)
+_dedup([d, nil], nil, [d, nil]) :- _todo([d, nil]).
+// If we've finished tocheck and found no duplicates, add the top of original to deduped.
+_dedup([top, d], nil, [top, o]) :- _dedup(d, [tc, nil], [top, o]), top != tc.
+// If the top of original has been seen before, keep it out of deduped and continue processing original.
+_dedup(d, d, [nexttop, [top, o]]) :- _todo([nexttop, [top, o]]), _dedup(d, [top, _], [top, o]).
+// Keep looking while we haven't proved or disproved that the top of original belongs in deduped.
+_dedup(d, tocheckrest, [top, rest]) :- _dedup(d, [tc, tocheckrest], [top, rest]), top != tc, tocheckrest != nil.
+// Move on to check the next todo item once we've finished with the current one.
+_dedup(d, d, [nexttop, o]) :- _todo([nexttop, o]), _dedup(d, nil, o).
+
+.decl dedup(deduped: List, original: List)
+.output dedup(IO=stdout)
+dedup(d, o) :- _dedup(d, nil, o).
