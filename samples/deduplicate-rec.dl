@@ -3,6 +3,10 @@
 // but it needs more bookkeeping with _todo for "returning" from the
 // recursive step and there is more casework for processing duplicates.
 
+// NOTE: this produces different output than deduplicate.dl.
+// This is because it chooses the rightmost element when there are
+// duplicates, while deduplicate.dl chooses the leftmost.
+
 .type List = [
     first: number,
     rest: List

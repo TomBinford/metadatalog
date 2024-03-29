@@ -1,8 +1,15 @@
+// An algorithm for deduplicating lists. It operates like an
+// imperative program that repeatedly pops an item from the source
+// list and pushes it onto the result list if it doesn't yet exist
+// in the result.
+
 .type List = [
     first: number,
     rest: List
 ]
 
+// To make a relation from original list to deduplicated list, you can
+// thread the original list through the rules in place of id here.
 .decl data(id: symbol, x: List)
 .output data(IO=stdout)
 data("d1", [1, [2, [3, [2, [4, [3, nil]]]]]]).
