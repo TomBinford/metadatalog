@@ -42,7 +42,7 @@
     rest: SubstitutionList
 ]
 
-.decl extensional(hc: HornClause)
+.decl extensional(rule: HornClause)
 
 // parent(0, 1).
 extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
@@ -74,20 +74,20 @@ body_predicate(rule, p, restpreds) :- body_predicate(rule, _, [p, restpreds]).
 body_argument(rule, arg, restargs) :- body_predicate(rule, [_, [arg, restargs]], _).
 body_argument(rule, arg, restargs) :- body_argument(rule, _, [arg, restargs]).
 
-.decl head_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList)
-head_argument(horn_clause, arg, restargs) :-
-    extensional(horn_clause),
-    horn_clause=[[_1, [arg, restargs]], _2].
-head_argument(horn_clause, arg, restargs) :- head_argument(horn_clause, _, [arg, restargs]).
+.decl head_argument(rule: HornClause, argument: Argument, rest_args: ArgumentList)
+head_argument(rule, arg, restargs) :-
+    extensional(rule),
+    rule=[[_1, [arg, restargs]], _2].
+head_argument(rule, arg, restargs) :- head_argument(rule, _, [arg, restargs]).
 
 // Report rules that contain a variable in the head that is not an
 // argument of any predicate in the body.
-.decl error_ungrounded_variable(ungrounded_variable: Argument, horn_clause: HornClause)
+.decl error_ungrounded_variable(ungrounded_variable: Argument, rule: HornClause)
 .output error_ungrounded_variable(IO=stdout, delimiter=" is ungrounded in ")
-error_ungrounded_variable(ungrounded_var, horn_clause) :-
-    head_argument(horn_clause, ungrounded_var, _),
+error_ungrounded_variable(ungrounded_var, rule) :-
+    head_argument(rule, ungrounded_var, _),
     ungrounded_var=$Variable(_1),
-    !body_argument(horn_clause, ungrounded_var, _).
+    !body_argument(rule, ungrounded_var, _).
 
 // The set of extensional facts (but constants is in reverse order)
 // No groundedness check necessary because extensional_fact_rev_(_, _, nil) will only exist when all arguments are constants.
@@ -103,29 +103,29 @@ extensional_fact_(pname, [c, restcs], revcs) :- extensional_fact_(pname, restcs,
 extensional_fact(pname, cs) :- extensional_fact_(pname, cs, nil).
 
 // The set of variables that appear in the body of a rule. Duplicates may be present.
-.decl rule_variables_(horn_clause: HornClause, variable_names: VariableList, rest_args: ArgumentList, rest_preds: PredicateList)
-rule_variables_(hc, nil, args, restpreds) :- extensional(hc), hc = [_1, [[_2, args], restpreds]].
-rule_variables_(hc, vnames, args, restpreds) :- rule_variables_(hc, vnames, nil, [[_, args], restpreds]).
-rule_variables_(hc, vnames, restargs, restpreds) :- rule_variables_(hc, vnames, [$Constant(_), restargs], restpreds).
-rule_variables_(hc, [vname, vnames], restargs, restpreds) :- rule_variables_(hc, vnames, [$Variable(vname), restargs], restpreds).
+.decl rule_variables_(rule: HornClause, variable_names: VariableList, rest_args: ArgumentList, rest_preds: PredicateList)
+rule_variables_(rule, nil, args, restpreds) :- extensional(rule), rule = [_1, [[_2, args], restpreds]].
+rule_variables_(rule, vnames, args, restpreds) :- rule_variables_(rule, vnames, nil, [[_, args], restpreds]).
+rule_variables_(rule, vnames, restargs, restpreds) :- rule_variables_(rule, vnames, [$Constant(_), restargs], restpreds).
+rule_variables_(rule, [vname, vnames], restargs, restpreds) :- rule_variables_(rule, vnames, [$Variable(vname), restargs], restpreds).
 
-.decl rule_variables(horn_clause: HornClause, variable_names: VariableList)
-rule_variables(hc, vnames) :- rule_variables_(hc, vnames, nil, nil).
+.decl rule_variables(rule: HornClause, variable_names: VariableList)
+rule_variables(rule, vnames) :- rule_variables_(rule, vnames, nil, nil).
 
 // The deduplicated version of rule_variables. It's also in reverse
 // order but that is irrelevant for substitutions.
 // This is modeled after samples/deduplicate.dl.
-.decl rule_variables_dedup_(horn_clause: HornClause, result: VariableList, tocheck: VariableList, todo: VariableList)
-rule_variables_dedup_(hc, nil, nil, x) :- rule_variables(hc, x).
+.decl rule_variables_dedup_(rule: HornClause, result: VariableList, tocheck: VariableList, todo: VariableList)
+rule_variables_dedup_(rule, nil, nil, x) :- rule_variables(rule, x).
 // When the top of tocheck has been seen before, leave output unchanged and consider the rest of tocheck.
-rule_variables_dedup_(hc, r, nil, trest) :- rule_variables_dedup_(hc, r, [s, _], [s, trest]).
+rule_variables_dedup_(rule, r, nil, trest) :- rule_variables_dedup_(rule, r, [s, _], [s, trest]).
 // When the top of todo was nowhere in result, move it to result.
-rule_variables_dedup_(hc, [e, result], [e, result], trest) :- rule_variables_dedup_(hc, result, nil, [e, trest]).
+rule_variables_dedup_(rule, [e, result], [e, result], trest) :- rule_variables_dedup_(rule, result, nil, [e, trest]).
 // Keep looking when we haven't proved or disproved that the top of todo is in result.
-rule_variables_dedup_(hc, r, tocheckrest, [e, trest]) :- rule_variables_dedup_(hc, r, [tocheck, tocheckrest], [e, trest]), tocheck != e.
+rule_variables_dedup_(rule, r, tocheckrest, [e, trest]) :- rule_variables_dedup_(rule, r, [tocheck, tocheckrest], [e, trest]), tocheck != e.
 
-.decl rule_variables_dedup(horn_clause: HornClause, result: VariableList)
-rule_variables_dedup(hc, vnames) :- rule_variables_dedup_(hc, vnames, _, nil).
+.decl rule_variables_dedup(rule: HornClause, result: VariableList)
+rule_variables_dedup(rule, vnames) :- rule_variables_dedup_(rule, vnames, _, nil).
 
 // The set of all constants in the program's facts.
 .decl fact_constant_(constant: number, rest: ConstantList)
@@ -134,12 +134,12 @@ fact_constant_(c, crest) :- fact_constant_(_, [c, crest]).
 
 // The set of substitutions that can be applied for a particular rule.
 // This is the starting point for bottom-up evaluation: generate all substitutions so later we can exhaustively try them.
-.decl possible_substitution_(horn_clause: HornClause, subs: SubstitutionList, variables_rest: VariableList)
-possible_substitution_(hc, nil, vars) :- rule_variables_dedup(hc, vars).
-possible_substitution_(hc, [[vname, c], srest], vrest) :- possible_substitution_(hc, srest, [vname, vrest]), fact_constant_(c, _).
+.decl possible_substitution_(rule: HornClause, subs: SubstitutionList, variables_rest: VariableList)
+possible_substitution_(rule, nil, vars) :- rule_variables_dedup(rule, vars).
+possible_substitution_(rule, [[vname, c], srest], vrest) :- possible_substitution_(rule, srest, [vname, vrest]), fact_constant_(c, _).
 
-.decl possible_substitution(horn_clause: HornClause, subs: SubstitutionList)
-possible_substitution(hc, subs) :- possible_substitution_(hc, subs, nil).
+.decl possible_substitution(rule: HornClause, subs: SubstitutionList)
+possible_substitution(rule, subs) :- possible_substitution_(rule, subs, nil).
 
 // Now apply the possible substitutions on the rules.
 .decl substitution_lookup(subs: SubstitutionList, variable_name: symbol, value: number, rest: SubstitutionList)
