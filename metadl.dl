@@ -120,7 +120,7 @@ rule_variables_dedup(hc, vnames) :- rule_variables_dedup_(hc, vnames, _, nil).
 
 // The set of all constants in the program's facts.
 .decl fact_constant_(constant: number, rest: ConstantList)
-fact_constant_(c, crest) :- fact(_, [c, crest]).
+fact_constant_(c, crest) :- fact_rev(_, [c, crest]).
 fact_constant_(c, crest) :- fact_constant_(_, [c, crest]).
 
 // The set of substitutions that can be applied for a particular rule.
@@ -132,7 +132,34 @@ possible_substitution_(hc, [[vname, c], srest], vrest) :- possible_substitution_
 .decl possible_substitution(horn_clause: HornClause, subs: SubstitutionList)
 possible_substitution(hc, subs) :- possible_substitution_(hc, subs, nil).
 
+// Now apply the possible substitutions on the rules.
+.decl substitution_lookup(subs: SubstitutionList, variable_name: symbol, value: number, rest: SubstitutionList)
+substitution_lookup(subs, var, v, rest) :- possible_substitution(_, subs), subs=[[var, v], rest].
+substitution_lookup(subs, var, v, rest) :- substitution_lookup(subs, _1, _2, [[var, v], rest]).
+
+.decl substitution_(rule: HornClause, subs: SubstitutionList, curr_pred_name: symbol, constants: ConstantList, arg_rest: ArgumentList, prest: PredicateList)
+// Note it's OK to work only on rules with >= 1 predicates because otherwise it's just an extensional fact.
+substitution_(rule, subs, pname, nil, args, prest) :- possible_substitution(rule, subs), rule=[_1, [[pname, args], prest]].
+// Constants are unchanged by substitution.
+substitution_(rule, subs, pname, [c, crest], arest, prest) :- substitution_(rule, subs, pname, crest, [$Constant(c), arest], prest).
+// Variables are transformed according to subs.
+substitution_(rule, subs, pname, [c, crest], arest, prest) :- substitution_(rule, subs, pname, crest, [$Variable(vname), arest], prest), substitution_lookup(subs, vname, c, _).
+// When finished with substitution of a predicate, we check that it is satisfied by an existing rule.
+// If so, we either move on to checking the rest of the body or, if we checked the entire body, we are done and the substitution has 'succeeded'.
+// (note we check against fact_rev because cs has been built up in reverse order)
+substitution_(rule, subs, next_pname, nil, next_args, prest) :- substitution_(rule, subs, pname, cs, nil, [[next_pname, next_args], prest]), fact_rev(pname, cs).
+
+.decl successful_substitution(rule: HornClause, subs: SubstitutionList, cs: ConstantList)
+successful_substitution(rule, subs, cs) :- substitution_(rule, subs, pname, cs, nil, nil), fact_rev(pname, cs).
+
+// TODO apply substitution to the head of rules in successful_substitution, then add a fact to the intensional DB.
+
 // The set of all facts in the metadatalog program, extensional and intensional.
+// Also available with constants in reverse order, which makes it easy to check
+// if substitutions have succeeded.
 // TODO the intensional part lol
+.decl fact_rev(predicate_name: symbol, constants: ConstantList)
+fact_rev(pname, cs) :- extensional_fact_rev_(pname, cs, _).
+
 .decl fact(predicate_name: symbol, constants: ConstantList)
 fact(pname, cs) :- extensional_fact(pname, cs).
