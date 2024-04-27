@@ -13,7 +13,7 @@
 .decl data(id: symbol, x: List)
 .output data(IO=stdout)
 data("d1", [1, [2, [3, [2, [4, [3, nil]]]]]]).
-data("d2", [3, [3, [1, [2, [1, nil]]]]]).
+data("d2", [3, [3, [1, [2, nil]]]]).
 
 .decl _dedup(id: symbol, result: List, tocheck: List, todo: List)
 _dedup(id, nil, nil, x) :- data(id, x).
@@ -26,7 +26,7 @@ _dedup(id, r, tocheckrest, [e, trest]) :- _dedup(id, r, [tocheck, tocheckrest], 
 
 // Reverse the results back to normal.
 .decl _dedup_rev(id: symbol, list: List, revlist: List)
-_dedup_rev(id, nil, rl) :- _dedup(id, rl, nil, nil).
+_dedup_rev(id, nil, rl) :- _dedup(id, rl, _, nil).
 _dedup_rev(id, [e, l], rl) :- _dedup_rev(id, l, [e, rl]).
 
 .decl dedup(id: symbol, list: List)
