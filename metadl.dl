@@ -32,6 +32,16 @@
     rest: VariableList
 ]
 
+.type Substitution = [
+    variable_name: symbol,
+    value: number
+]
+
+.type SubstitutionList = [
+    first: Substitution,
+    rest: SubstitutionList
+]
+
 .decl extensional(hc: HornClause)
 .output extensional
 
@@ -107,6 +117,20 @@ rule_variables_dedup_(hc, r, tocheckrest, [e, trest]) :- rule_variables_dedup_(h
 
 .decl rule_variables_dedup(horn_clause: HornClause, result: VariableList)
 rule_variables_dedup(hc, vnames) :- rule_variables_dedup_(hc, vnames, _, nil).
+
+// The set of all constants in the program's facts.
+.decl fact_constant_(constant: number, rest: ConstantList)
+fact_constant_(c, crest) :- fact(_, [c, crest]).
+fact_constant_(c, crest) :- fact_constant_(_, [c, crest]).
+
+// The set of substitutions that can be applied for a particular rule.
+// This is the starting point for bottom-up evaluation: generate all substitutions so later we can exhaustively try them.
+.decl possible_substitution_(horn_clause: HornClause, subs: SubstitutionList, variables_rest: VariableList)
+possible_substitution_(hc, nil, vars) :- rule_variables_dedup(hc, vars).
+possible_substitution_(hc, [[vname, c], srest], vrest) :- possible_substitution_(hc, srest, [vname, vrest]), fact_constant_(c, _).
+
+.decl possible_substitution(horn_clause: HornClause, subs: SubstitutionList)
+possible_substitution(hc, subs) :- possible_substitution_(hc, subs, nil).
 
 // The set of all facts in the metadatalog program, extensional and intensional.
 // TODO the intensional part lol
