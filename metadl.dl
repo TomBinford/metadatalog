@@ -27,6 +27,11 @@
     body: PredicateList
 ]
 
+.type VariableList = [
+    first: symbol,
+    rest: VariableList
+]
+
 .decl extensional(hc: HornClause)
 .output extensional
 
@@ -36,8 +41,12 @@ extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
 // ancestor(x, y) :- parent(x, y).
 extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
             [["parent", [$Variable("x"), [$Variable("y"), nil]]], nil]]).
+// ancestor(x, y) :- ancestor(x, z), parent(z, y).
+extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
+            [["ancestor", [$Variable("x"), [$Variable("z"), nil]]], [["parent", [$Variable("z"), [$Variable("y"), nil]]], nil]]]).
 
 .decl body_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList, rest_preds: PredicateList)
+// FIXME this won't include a rule if its first predicate has no arguments.
 body_argument(horn_clause, arg, restargs, restpreds) :-
     extensional(horn_clause),
     horn_clause=[_1, [[_2, [arg, restargs]], restpreds]].
@@ -73,6 +82,16 @@ extensional_fact_(pname, [c, restcs], revcs) :- extensional_fact_(pname, restcs,
 extensional_fact(pname, cs) :- extensional_fact_(pname, cs, nil).
 
 .output extensional_fact(IO=stdout)
+
+// The set of variables that appear in the body of a rule. Duplicates may be present.
+.decl rule_variables_(horn_clause: HornClause, variable_names: VariableList, rest_args: ArgumentList, rest_preds: PredicateList)
+rule_variables_(hc, nil, args, restpreds) :- extensional(hc), hc = [_1, [[_2, args], restpreds]].
+rule_variables_(hc, vnames, args, restpreds) :- rule_variables_(hc, vnames, nil, [[_, args], restpreds]).
+rule_variables_(hc, vnames, restargs, restpreds) :- rule_variables_(hc, vnames, [$Constant(_), restargs], restpreds).
+rule_variables_(hc, [vname, vnames], restargs, restpreds) :- rule_variables_(hc, vnames, [$Variable(vname), restargs], restpreds).
+
+.decl rule_variables(horn_clause: HornClause, variable_names: VariableList)
+rule_variables(hc, vnames) :- rule_variables_(hc, vnames, nil, nil).
 
 // The set of all facts in the metadatalog program, extensional and intensional.
 // TODO the intensional part lol
