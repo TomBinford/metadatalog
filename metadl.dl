@@ -60,13 +60,13 @@ extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
 extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
             [["ancestor", [$Variable("x"), [$Variable("z"), nil]]], [["parent", [$Variable("z"), [$Variable("y"), nil]]], nil]]]).
 
-.decl body_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList, rest_preds: PredicateList)
-// FIXME this won't include a rule if its first predicate has no arguments.
-body_argument(horn_clause, arg, restargs, restpreds) :-
-    extensional(horn_clause),
-    horn_clause=[_1, [[_2, [arg, restargs]], restpreds]].
-body_argument(horn_clause, arg, restargs, restpreds) :- body_argument(horn_clause, _, [arg, restargs], restpreds).
-body_argument(horn_clause, arg, restargs, restpreds) :- body_argument(horn_clause, _, nil, [[_, [arg, restargs]], restpreds]).
+.decl body_predicate(rule: HornClause, predicate: Predicate, rest_preds: PredicateList)
+body_predicate(rule, p, restpreds) :- extensional(rule), rule=[_1, [p, restpreds]].
+body_predicate(rule, p, restpreds) :- body_predicate(rule, _, [p, restpreds]).
+
+.decl body_argument(rule: HornClause, argument: Argument, rest_args: ArgumentList)
+body_argument(rule, arg, restargs) :- body_predicate(rule, [_, [arg, restargs]], _).
+body_argument(rule, arg, restargs) :- body_argument(rule, _, [arg, restargs]).
 
 .decl head_argument(horn_clause: HornClause, argument: Argument, rest_args: ArgumentList)
 head_argument(horn_clause, arg, restargs) :-
@@ -81,7 +81,7 @@ head_argument(horn_clause, arg, restargs) :- head_argument(horn_clause, _, [arg,
 error_ungrounded_variable(ungrounded_var, horn_clause) :-
     head_argument(horn_clause, ungrounded_var, _),
     ungrounded_var=$Variable(_1),
-    !body_argument(horn_clause, ungrounded_var, _, _).
+    !body_argument(horn_clause, ungrounded_var, _).
 
 // The set of extensional facts (but constants is in reverse order)
 // No groundedness check necessary because extensional_fact_rev_(_, _, nil) will only exist when all arguments are constants.
