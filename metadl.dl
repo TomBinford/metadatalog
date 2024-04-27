@@ -43,10 +43,15 @@
 ]
 
 .decl extensional(hc: HornClause)
-.output extensional
 
 // parent(0, 1).
 extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
+            nil]).
+// parent(1, 2).
+extensional([["parent", [$Constant(1), [$Constant(2), nil]]],
+            nil]).
+// parent(2, 3).
+extensional([["parent", [$Constant(2), [$Constant(3), nil]]],
             nil]).
 // ancestor(x, y) :- parent(x, y).
 extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
@@ -90,8 +95,6 @@ extensional_fact_(pname, [c, restcs], revcs) :- extensional_fact_(pname, restcs,
 
 .decl extensional_fact(predicate_name: symbol, constants: ConstantList)
 extensional_fact(pname, cs) :- extensional_fact_(pname, cs, nil).
-
-.output extensional_fact(IO=stdout)
 
 // The set of variables that appear in the body of a rule. Duplicates may be present.
 .decl rule_variables_(horn_clause: HornClause, variable_names: VariableList, rest_args: ArgumentList, rest_preds: PredicateList)
@@ -149,17 +152,33 @@ substitution_(rule, subs, pname, [c, crest], arest, prest) :- substitution_(rule
 // (note we check against fact_rev because cs has been built up in reverse order)
 substitution_(rule, subs, next_pname, nil, next_args, prest) :- substitution_(rule, subs, pname, cs, nil, [[next_pname, next_args], prest]), fact_rev(pname, cs).
 
-.decl successful_substitution(rule: HornClause, subs: SubstitutionList, cs: ConstantList)
-successful_substitution(rule, subs, cs) :- substitution_(rule, subs, pname, cs, nil, nil), fact_rev(pname, cs).
+.decl successful_substitution(rule: HornClause, subs: SubstitutionList)
+successful_substitution(rule, subs) :- substitution_(rule, subs, pname, cs, nil, nil), fact_rev(pname, cs).
 
-// TODO apply substitution to the head of rules in successful_substitution, then add a fact to the intensional DB.
+// Now apply substitution to the head of rules in successful_substitution, which will represent an intensional fact.
+.decl head_substitution_rev_(head_name: symbol, substituted_args: ConstantList, subs: SubstitutionList, arg_rest: ArgumentList)
+head_substitution_rev_(hname, nil, subs, args) :- successful_substitution([[hname, args], _], subs).
+head_substitution_rev_(hname, [c, cs], subs, arest) :- head_substitution_rev_(hname, cs, subs, [$Constant(c), arest]).
+head_substitution_rev_(hname, [c, cs], subs, arest) :- head_substitution_rev_(hname, cs, subs, [$Variable(vname), arest]), substitution_lookup(subs, vname, c, _).
+
+// And lastly reverse so that things are in order.
+.decl head_substitution_(head_name: symbol, result: ConstantList, input_rest: ConstantList)
+head_substitution_(hname, nil, cs) :- head_substitution_rev_(hname, cs, _, nil).
+head_substitution_(hname, [c, crest], inrest) :- head_substitution_(hname, crest, [c, inrest]).
+
+.decl intensional_fact(head_name: symbol, constants: ConstantList)
+intensional_fact(hname, cs) :- head_substitution_(hname, cs, nil).
 
 // The set of all facts in the metadatalog program, extensional and intensional.
-// Also available with constants in reverse order, which makes it easy to check
-// if substitutions have succeeded.
-// TODO the intensional part lol
-.decl fact_rev(predicate_name: symbol, constants: ConstantList)
-fact_rev(pname, cs) :- extensional_fact_rev_(pname, cs, _).
-
+// Also available with constants in reverse order, which is convenient for the
+// substitution-checking phase.
 .decl fact(predicate_name: symbol, constants: ConstantList)
 fact(pname, cs) :- extensional_fact(pname, cs).
+fact(pname, cs) :- intensional_fact(pname, cs).
+
+.decl fact_rev(predicate_name: symbol, constants: ConstantList)
+fact_rev(pname, cs) :- extensional_fact_rev_(pname, cs, _).
+fact_rev(pname, cs) :- head_substitution_rev_(pname, cs, _, _).
+
+.output extensional_fact(IO=stdout)
+.output intensional_fact(IO=stdout)
