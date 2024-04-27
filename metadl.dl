@@ -50,6 +50,9 @@ extensional([["parent", [$Constant(0), [$Constant(1), nil]]],
 // parent(1, 2).
 extensional([["parent", [$Constant(1), [$Constant(2), nil]]],
             nil]).
+// parent(1, -2).
+extensional([["parent", [$Constant(1), [$Constant(-2), nil]]],
+            nil]).
 // parent(2, 3).
 extensional([["parent", [$Constant(2), [$Constant(3), nil]]],
             nil]).
@@ -59,6 +62,9 @@ extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
 // ancestor(x, y) :- ancestor(x, z), parent(z, y).
 extensional([["ancestor", [$Variable("x"), [$Variable("y"), nil]]],
             [["ancestor", [$Variable("x"), [$Variable("z"), nil]]], [["parent", [$Variable("z"), [$Variable("y"), nil]]], nil]]]).
+// same_parent(x, y) :- parent(p, x), parent(p, y).
+extensional([["same_parent", [$Variable("x"), [$Variable("y"), nil]]],
+            [["parent", [$Variable("p"), [$Variable("x"), nil]]], [["parent", [$Variable("p"), [$Variable("y"), nil]]], nil]]]).
 
 .decl body_predicate(rule: HornClause, predicate: Predicate, rest_preds: PredicateList)
 body_predicate(rule, p, restpreds) :- extensional(rule), rule=[_1, [p, restpreds]].
