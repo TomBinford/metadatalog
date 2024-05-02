@@ -27,6 +27,8 @@ _dedup([d, nil], nil, [d, nil]) :- _todo([d, nil]).
 _dedup([top, d], nil, [top, o]) :- _dedup(d, [tc, nil], [top, o]), top != tc.
 // If the top of original has been seen before, keep it out of deduped and continue processing original.
 _dedup(d, d, [nexttop, [top, o]]) :- _todo([nexttop, [top, o]]), _dedup(d, [top, _], [top, o]).
+// Or, if there's nothing in _todo and we've found a duplicate, finish with nil.
+_dedup(d, nil, [top, o]) :- _dedup(d, [top, _], [top, o]).
 // Keep looking while we haven't proved or disproved that the top of original belongs in deduped.
 _dedup(d, tocheckrest, [top, rest]) :- _dedup(d, [tc, tocheckrest], [top, rest]), top != tc, tocheckrest != nil.
 // Move on to check the next todo item once we've finished with the current one.
