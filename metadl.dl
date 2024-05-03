@@ -183,8 +183,8 @@ fact(pname, cs) :- extensional_fact(pname, cs).
 fact(pname, cs) :- intensional_fact(pname, cs).
 
 .decl fact_rev(predicate_name: symbol, constants: ConstantList)
-fact_rev(pname, cs) :- extensional_fact_rev_(pname, cs, _).
-fact_rev(pname, cs) :- head_substitution_rev_(pname, cs, _, _).
+fact_rev(pname, cs) :- extensional_fact_rev_(pname, cs, nil).
+fact_rev(pname, cs) :- head_substitution_rev_(pname, cs, _, nil).
 
 .output extensional_fact(IO=stdout)
 .output intensional_fact(IO=stdout)
