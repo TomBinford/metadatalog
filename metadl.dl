@@ -119,7 +119,7 @@ rule_variables(rule, vnames) :- rule_variables_(rule, vnames, nil, nil).
 rule_variables_dedup_(rule, nil, nil, x) :- rule_variables(rule, x).
 // When the top of tocheck has been seen before, leave output unchanged and consider the rest of tocheck.
 rule_variables_dedup_(rule, r, nil, trest) :- rule_variables_dedup_(rule, r, [s, _], [s, trest]).
-// When the top of todo was nowhere in result, move it to result.
+// When the top of todo was nowhere in result (i.e. we searched all of tocheck and didn't find it), move it to result.
 rule_variables_dedup_(rule, [e, result], [e, result], trest) :- rule_variables_dedup_(rule, result, nil, [e, trest]).
 // Keep looking when we haven't proved or disproved that the top of todo is in result.
 rule_variables_dedup_(rule, r, tocheckrest, [e, trest]) :- rule_variables_dedup_(rule, r, [tocheck, tocheckrest], [e, trest]), tocheck != e.
